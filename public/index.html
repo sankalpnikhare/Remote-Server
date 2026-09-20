@@ -481,6 +481,31 @@
     </main>
 
 
+
+    <!-- REMOTE KEY AUTHENTICATION MODAL -->
+    <div id="auth-modal" class="fixed inset-0 z-[100] bg-stone-900/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="cream-card rounded-2xl max-w-sm w-full p-7 shadow-2xl">
+            <div class="w-14 h-14 rounded-2xl bg-stone-900 text-white flex items-center justify-center mx-auto mb-5">
+                <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <rect x="3" y="11" width="18" height="10" rx="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+            </div>
+            <h2 class="text-xl font-bold text-stone-900 text-center">Restricted Access</h2>
+            <p class="text-xs text-stone-500 text-center mt-2 mb-6">Enter your remote key to access the control center.</p>
+            <form id="auth-form" class="space-y-3">
+                <input id="remote-key" type="password" autocomplete="current-password"
+                    placeholder="Enter remote key" required
+                    class="w-full rounded-xl border border-[#EAE7DF] bg-[#FAF9F5] px-4 py-3 text-sm outline-none focus:border-stone-900">
+                <p id="auth-error" class="hidden text-xs text-rose-600"></p>
+                <button id="auth-submit" type="submit"
+                    class="cream-btn cream-btn-primary w-full rounded-xl py-3 text-sm font-semibold">
+                    Unlock Control Center
+                </button>
+            </form>
+        </div>
+    </div>
+
     <!-- TOAST CONTAINER -->
     <div id="toast-container"
         class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-xs w-full pointer-events-none">
@@ -564,6 +589,63 @@
 
     <!-- APPLICATION SCRIPT -->
     <script>
+
+
+        // Remote key authentication
+        async function initializeAuthentication() {
+            const modal = document.querySelector("#auth-modal");
+            const form = document.querySelector("#auth-form");
+            const keyInput = document.querySelector("#remote-key");
+            const errorText = document.querySelector("#auth-error");
+            const submitButton = document.querySelector("#auth-submit");
+
+            try {
+                const response = await fetch("/api/auth/status", {
+                    cache: "no-store",
+                    credentials: "same-origin"
+                });
+
+                if (response.ok) {
+                    modal.classList.add("hidden");
+                    return;
+                }
+            } catch (error) {
+                // The login form remains visible if the status check fails.
+            }
+
+            form.addEventListener("submit", async (event) => {
+                event.preventDefault();
+                errorText.classList.add("hidden");
+                submitButton.disabled = true;
+                submitButton.textContent = "Checking...";
+
+                try {
+                    const response = await fetch("/api/auth/login", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        credentials: "same-origin",
+                        body: JSON.stringify({ key: keyInput.value })
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(data.error || "Authentication failed");
+                    }
+
+                    modal.classList.add("hidden");
+                    keyInput.value = "";
+                    updateStatus();
+                } catch (error) {
+                    errorText.textContent = error.message;
+                    errorText.classList.remove("hidden");
+                } finally {
+                    submitButton.disabled = false;
+                    submitButton.textContent = "Unlock Control Center";
+                }
+            });
+        }
+
 
         let currentScreenshotUrl = null;
         let confirmCallback = null;
@@ -949,8 +1031,7 @@
         }
 
 
-        updateStatus();
-
+        initializeAuthentication();
         setInterval(updateStatus, 10000);
 
     </script>

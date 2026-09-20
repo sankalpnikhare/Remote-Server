@@ -7,6 +7,7 @@ const screenshot = require("screenshot-desktop");
 const si = require("systeminformation");
 const { execFile } = require("child_process");
 const path = require("path");
+const crypto = require("crypto");
 
 const app = express();
 
@@ -35,8 +36,115 @@ app.use(
   })
 );
 
+// Remote token authentication
+const REMOTE_TOKEN = process.env.REMOTE_TOKEN;
+
+if (!REMOTE_TOKEN) {
+  throw new Error("REMOTE_TOKEN is missing from the .env file");
+}
+
+// Cookie helper
+function getCookie(req, name) {
+  const cookies = req.headers.cookie || "";
+
+  const item = cookies
+    .split(";")
+    .find((part) => part.trim().startsWith(`${name}=`));
+
+  if (!item) return null;
+
+  try {
+    return decodeURIComponent(
+      item.trim().slice(name.length + 1)
+    );
+  } catch {
+    return null;
+  }
+}
+
+// Secure token comparison
+function tokenMatches(value) {
+  if (!value || typeof value !== "string") {
+    return false;
+  }
+
+  const provided = Buffer.from(value);
+  const expected = Buffer.from(REMOTE_TOKEN);
+
+  return (
+    provided.length === expected.length &&
+    crypto.timingSafeEqual(provided, expected)
+  );
+}
+
+// Authentication middleware
+function requireAuth(req, res, next) {
+  const authCookie = getCookie(req, "remote_auth");
+
+  if (!tokenMatches(authCookie)) {
+    return res.status(401).json({
+      error: "Unauthorized. Enter the remote key.",
+    });
+  }
+
+  next();
+}
+
+// Login endpoint
+app.post("/api/auth/login", (req, res) => {
+  const { key } = req.body || {};
+
+  if (!tokenMatches(key)) {
+    return res.status(401).json({
+      error: "Invalid remote key",
+    });
+  }
+
+  // Set HTTP-only session cookie
+  res.setHeader(
+    "Set-Cookie",
+    "remote_auth=" +
+      encodeURIComponent(REMOTE_TOKEN) +
+      "; HttpOnly; SameSite=Strict; Path=/"
+  );
+
+  res.json({
+    success: true,
+    message: "Authentication successful",
+  });
+});
+
+// Logout endpoint
+app.post("/api/auth/logout", (req, res) => {
+  res.setHeader(
+    "Set-Cookie",
+    "remote_auth=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0"
+  );
+
+  res.json({
+    success: true,
+    message: "Logged out successfully",
+  });
+});
+
+// Authentication status
+app.get("/api/auth/status", requireAuth, (req, res) => {
+  res.json({
+    authenticated: true,
+  });
+});
+
 // Serve the frontend
 app.use(express.static("public"));
+
+// Protect all other API endpoints
+app.use("/api", (req, res, next) => {
+  if (req.path.startsWith("/auth/")) {
+    return next();
+  }
+
+  return requireAuth(req, res, next);
+});
 
 // Execute Windows commands
 function runWindows(command, args = []) {
@@ -91,7 +199,7 @@ app.get("/api/status", async (req, res) => {
 
 // Power controls
 app.post("/api/action", async (req, res) => {
-  const { action } = req.body;
+  const { action } = req.body || {};
 
   try {
     switch (action) {
@@ -146,7 +254,9 @@ app.post("/api/action", async (req, res) => {
 // Take a screenshot
 app.get("/api/screenshot", async (req, res) => {
   try {
-    const image = await screenshot({ format: "png" });
+    const image = await screenshot({
+      format: "png",
+    });
 
     res.setHeader("Content-Type", "image/png");
     res.send(image);
