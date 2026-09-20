@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Remote PC Control Center</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        cream: {
+                            50: '#FCFCFA',
+                            100: '#F7F6F0',
+                            200: '#EFECE1',
+                            300: '#E2DEC9',
+                            400: '#C8C2A5',
+                        },
+                        charcoal: {
+                            500: '#52525B',
+                            700: '#27272A',
+                            800: '#18181B',
+                            900: '#0F0F10',
+                        },
+                        accent: {
+                            amber: '#D97706',
+                            amberLight: '#FEF3C7',
+                            emerald: '#059669',
+                            emeraldLight: '#D1FAE5',
+                            indigo: '#4F46E5',
+                            indigoLight: '#E0E7FF',
+                            rose: '#E11D48',
+                            roseLight: '#FFE4E6',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root {
+            --bg-cream: #F8F7F2;
+            --panel-white: #FFFFFF;
+            --border-warm: #EAE7DF;
+            --border-hover: #D8D3C5;
+            --text-main: #1C1917;
+            --text-muted: #78716C;
+            --shadow-soft: 0 10px 30px -5px rgba(28, 25, 23, 0.04), 0 4px 12px -2px rgba(28, 25, 23, 0.02);
+            --shadow-card: 0 20px 40px -15px rgba(0, 0, 0, 0.03);
+            --shadow-btn: 0 2px 5px rgba(0, 0, 0, 0.04);
+        }
+
+        body {
+            background-color: var(--bg-cream);
+            color: var(--text-main);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-image:
+                radial-gradient(circle at 15% 15%, rgba(217, 119, 6, 0.025) 0%, transparent 40%),
+                radial-gradient(circle at 85% 85%, rgba(79, 70, 229, 0.025) 0%, transparent 40%);
+            background-attachment: fixed;
+        }
+
+        /* Cream Soft Card Container */
+        .cream-card {
+            background: var(--panel-white);
+            border: 1px solid var(--border-warm);
+            box-shadow: var(--shadow-card);
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .cream-card:hover {
+            border-color: var(--border-hover);
+            box-shadow: 0 22px 45px -12px rgba(28, 25, 23, 0.07);
+        }
+
+        /* Minimalist Button Interactions */
+        .cream-btn {
+            background: #FFFFFF;
+            border: 1px solid var(--border-warm);
+            color: var(--text-main);
+            box-shadow: var(--shadow-btn);
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .cream-btn:hover:not(:disabled) {
+            transform: translateY(-1.5px);
+            background: #FAF9F5;
+            border-color: #D6D1C4;
+            box-shadow: 0 6px 16px -4px rgba(0, 0, 0, 0.08);
+        }
+
+        .cream-btn:active:not(:disabled) {
+            transform: translateY(0) scale(0.98);
+        }
+
+        .cream-btn-primary {
+            background: #1C1917;
+            border-color: #1C1917;
+            color: #FFFFFF;
+        }
+
+        .cream-btn-primary:hover:not(:disabled) {
+            background: #2E2A27;
+            border-color: #2E2A27;
+            box-shadow: 0 8px 20px -4px rgba(28, 25, 23, 0.25);
+        }
+
+        .cream-btn-danger {
+            background: #FFF1F2;
+            border-color: #FECDD3;
+            color: #E11D48;
+        }
+
+        .cream-btn-danger:hover:not(:disabled) {
+            background: #FFE4E6;
+            border-color: #FDA4AF;
+            color: #BE123C;
+        }
+
+        /* Circular Shutdown Button */
+        .stop-server-btn {
+            width: 58px;
+            height: 58px;
+            padding: 0;
+            border-radius: 9999px;
+            background: #FFFFFF;
+            border: 1.5px solid #FECDD3;
+            color: #E11D48;
+            box-shadow: 0 4px 14px -2px rgba(225, 29, 72, 0.08);
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .stop-server-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            background: #FFF1F2;
+            border-color: #FDA4AF;
+            color: #BE123C;
+            box-shadow: 0 8px 20px -4px rgba(225, 29, 72, 0.16);
+        }
+
+        .stop-server-btn:active:not(:disabled) {
+            transform: translateY(0) scale(0.95);
+        }
+
+        .stop-server-btn svg {
+            width: 25px;
+            height: 25px;
+        }
+
+        /* Custom Modal Backdrop */
+        .modal-backdrop {
+            background-color: rgba(28, 25, 23, 0.35);
+            backdrop-filter: blur(8px);
+        }
+
+        /* Custom Toast Styling */
+        .toast-item {
+            animation: toastIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes toastIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px) scale(0.95);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex flex-col justify-between antialiased selection:bg-stone-200 selection:text-stone-900">
+
+    <!-- HEADER -->
+    <header class="sticky top-0 z-30 w-full border-b border-[#EAE7DF] bg-[#F8F7F2]/80 backdrop-blur-md px-4 sm:px-8 py-4">
+        <div class="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+
+            <!-- Brand -->
+            <div class="brand flex items-center gap-3.5 w-full sm:w-auto">
+                <div class="brand-icon w-10 h-10 rounded-2xl bg-stone-900 text-white flex items-center justify-center shadow-md shadow-stone-900/10 transition-transform hover:scale-105">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                        <line x1="8" y1="21" x2="16" y2="21" />
+                        <line x1="12" y1="17" x2="12" y2="21" />
+                    </svg>
+                </div>
+
+                <div>
+                    <h1 class="font-bold text-base tracking-tight text-stone-900">Remote Control</h1>
+                    <p class="text-xs text-stone-500 font-medium">Personal workstation node</p>
+                </div>
+            </div>
+
+            <!-- Status Pills -->
+            <div class="status flex items-center gap-2.5 w-full sm:w-auto justify-end">
+
+                <!-- Wi-Fi Status -->
+                <div class="status-pill flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-[#EAE7DF] bg-white text-xs font-medium text-stone-600 shadow-sm">
+                    <span class="status-dot w-2 h-2 rounded-full bg-stone-400 transition-colors duration-300" id="wifi-dot"></span>
+                    <span id="wifi" class="tracking-tight">Checking network...</span>
+                </div>
+
+                <!-- Battery Status -->
+                <div class="status-pill flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-[#EAE7DF] bg-white text-xs font-medium text-stone-600 shadow-sm">
+                    <svg class="w-3.5 h-3.5 text-stone-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <rect x="1" y="6" width="18" height="12" rx="2" />
+                        <path d="M23 11v2" />
+                    </svg>
+
+                    <span id="battery" class="tracking-tight">🔋 --</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+
+    <!-- MAIN DASHBOARD CONTENT -->
+    <main class="max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-10 flex-1 flex flex-col justify-between">
+
+        <div>
+
+            <!-- Hero Title -->
+            <section class="hero mb-8">
+                <div class="eyebrow inline-flex items-center gap-2 px-3 py-1 rounded-full border border-amber-200 bg-amber-50 text-amber-800 text-[11px] font-semibold tracking-wide uppercase mb-3">
+                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                    <span>Active Endpoint Session</span>
+                </div>
+
+                <h2 class="text-3xl sm:text-4xl font-extrabold text-stone-900 tracking-tight">
+                    Control Workstation
+                </h2>
+
+                <p class="mt-2 text-stone-500 text-sm sm:text-base max-w-lg leading-relaxed">
+                    Manage power states, stream real-time desktop telemetry, and monitor device health remotely.
+                </p>
+            </section>
+
+
+            <!-- Main Cards Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+                <!-- POWER CONTROLS CARD -->
+                <section class="card cream-card rounded-2xl p-6 lg:col-span-5 flex flex-col justify-between">
+
+                    <div>
+
+                        <div class="card-heading flex justify-between items-start mb-6 pb-4 border-b border-[#F0EDF5]">
+
+                            <div class="card-title flex items-center gap-3">
+
+                                <div class="card-icon w-10 h-10 rounded-xl bg-amber-50 text-amber-600 border border-amber-100 flex items-center justify-center">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                                    </svg>
+                                </div>
+
+                                <div>
+                                    <h3 class="text-base font-bold text-stone-900 tracking-tight">Power Actions</h3>
+                                    <p class="card-subtitle text-xs text-stone-500">Manage computer session</p>
+                                </div>
+
+                            </div>
+
+                            <span class="card-label text-[10px] font-semibold text-stone-400 bg-stone-100 px-2 py-1 rounded-md uppercase tracking-wider">
+                                Control
+                            </span>
+
+                        </div>
+
+
+                        <!-- Action Buttons -->
+                        <div class="actions grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+                            <!-- Lock Button -->
+                            <button class="cream-btn rounded-xl py-3.5 px-4 flex items-center justify-center gap-2.5 text-xs font-semibold"
+                                onclick="action('lock')">
+
+                                <svg class="w-4 h-4 text-stone-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                                </svg>
+
+                                <span>Lock Session</span>
+                            </button>
+
+
+                            <!-- Restart Button -->
+                            <button class="cream-btn cream-btn-primary rounded-xl py-3.5 px-4 flex items-center justify-center gap-2.5 text-xs font-semibold"
+                                onclick="confirmAction('restart')">
+
+                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+                                </svg>
+
+                                <span>Restart PC</span>
+                            </button>
+
+
+                            <!-- Cancel Shutdown Button -->
+                            <button class="cream-btn cream-btn-danger sm:col-span-2 rounded-xl py-3.5 px-4 flex items-center justify-center gap-2.5 text-xs font-semibold"
+                                onclick="action('cancelShutdown')">
+
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path d="M9 14L4 9l5-5" />
+                                    <path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11" />
+                                </svg>
+
+                                <span>Cancel Shutdown</span>
+                            </button>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- Footer info in card -->
+                    <div class="mt-8 pt-4 border-t border-[#F0EDE6] flex items-center justify-between text-xs text-stone-400 font-mono">
+                        <span>SECURITY: ENCRYPTED</span>
+                        <span>TYPE: REST API</span>
+                    </div>
+
+                </section>
+
+
+                <!-- SCREENSHOT / PREVIEW CARD -->
+                <section class="card cream-card rounded-2xl p-6 lg:col-span-7 flex flex-col justify-between">
+
+                    <div>
+
+                        <div class="card-heading flex justify-between items-start mb-6 pb-4 border-b border-[#F0EDE6]">
+
+                            <div class="card-title flex items-center gap-3">
+
+                                <div class="card-icon w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                                        <circle cx="12" cy="13" r="4" />
+                                    </svg>
+                                </div>
+
+                                <div>
+                                    <h3 class="text-base font-bold text-stone-900 tracking-tight">Desktop Preview</h3>
+                                    <p class="card-subtitle text-xs text-stone-500">Capture current active display</p>
+                                </div>
+
+                            </div>
+
+                            <span class="card-label text-[10px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-1 rounded-md uppercase tracking-wider">
+                                Live View
+                            </span>
+
+                        </div>
+
+
+                        <!-- Capture Action Button -->
+                        <button class="cream-btn cream-btn-primary w-full rounded-xl py-3 px-4 flex items-center justify-center gap-2 text-xs font-semibold tracking-wide mb-4"
+                            id="capture-button"
+                            onclick="takeShot()">
+
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                                <circle cx="12" cy="13" r="4" />
+                            </svg>
+
+                            <span>Capture Screenshot</span>
+                        </button>
+
+
+                        <!-- Screenshot Display Area -->
+                        <div class="screenshot-area min-h-[200px] max-h-[360px] rounded-xl border border-dashed border-[#DCD7C9] bg-[#FAF9F5] p-3 flex items-center justify-center overflow-hidden relative group">
+
+                            <!-- Placeholder -->
+                            <div id="placeholder" class="screenshot-placeholder text-center p-6">
+
+                                <div class="w-12 h-12 rounded-full bg-stone-100 border border-stone-200 text-stone-400 flex items-center justify-center mx-auto mb-3">
+
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                                        <circle cx="8.5" cy="8.5" r="1.5" />
+                                        <polyline points="21 15 16 10 5 21" />
+                                    </svg>
+
+                                </div>
+
+                                <p class="text-xs font-medium text-stone-500">
+                                    No screenshot captured yet
+                                </p>
+
+                                <p class="text-[11px] text-stone-400 mt-1">
+                                    Click capture to stream desktop frame
+                                </p>
+
+                            </div>
+
+
+                            <!-- Image element -->
+                            <img id="shot"
+                                class="hidden w-full h-full object-contain max-h-[340px] rounded-lg cursor-pointer transition-transform duration-200 hover:scale-[1.01]"
+                                alt="Desktop screenshot"
+                                onclick="openLightbox">
+
+
+                            <!-- Hover Overlay Indicator -->
+                            <div id="shot-hover-hint"
+                                class="hidden absolute top-3 right-3 bg-stone-900/80 text-white text-[10px] font-mono px-2.5 py-1 rounded-md backdrop-blur-sm pointer-events-none">
+                                CLICK TO EXPAND
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="mt-4 flex items-center justify-between text-xs text-stone-400 font-mono">
+                        <span id="shot-status">STATUS: IDLE</span>
+                        <span>FORMAT: BLOB / PNG</span>
+                    </div>
+
+                </section>
+
+            </div>
+
+        </div>
+
+
+        <!-- BOTTOM SHUTDOWN ICON -->
+        <div class="mt-14 pt-8 border-t border-[#EAE7DF] flex items-center justify-center">
+
+            <button
+                class="stop-server-btn"
+                onclick="confirmAction('stopServer')"
+                aria-label="Stop Remote Server"
+                title="Stop Remote Server">
+
+                <svg fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.2"
+                    viewBox="0 0 24 24">
+
+                    <path d="M18.36 6.64a9 9 0 1 1-12.73 0" />
+
+                    <line x1="12"
+                        y1="2"
+                        x2="12"
+                        y2="12" />
+
+                </svg>
+
+            </button>
+
+        </div>
+
+
+        <!-- Footer -->
+        <div class="footer mt-6 text-center text-xs font-medium text-stone-400">
+            Remote PC Control Center • Secure tunnel endpoint
+        </div>
+
+    </main>
+
+
+    <!-- TOAST CONTAINER -->
+    <div id="toast-container"
+        class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-xs w-full pointer-events-none">
+    </div>
+
+
+    <!-- LIGHTBOX PREVIEW MODAL -->
+    <div id="lightbox"
+        class="fixed inset-0 z-50 bg-stone-900/80 backdrop-blur-md hidden flex-col items-center justify-center p-4">
+
+        <button onclick="closeLightbox()"
+            class="absolute top-5 right-5 text-stone-300 hover:text-white p-2 rounded-xl bg-stone-800/60 border border-stone-700/50 text-xs font-mono">
+            ✕ CLOSE (ESC)
+        </button>
+
+        <img id="lightbox-img"
+            class="max-w-full max-h-[85vh] rounded-xl border border-stone-700 shadow-2xl object-contain"
+            src=""
+            alt="Enlarged Screenshot">
+
+    </div>
+
+
+    <!-- RESTART / STOP SERVER CONFIRMATION MODAL -->
+    <div id="confirm-modal"
+        class="fixed inset-0 z-50 modal-backdrop hidden items-center justify-center p-4">
+
+        <div class="cream-card rounded-2xl max-w-sm w-full p-6 text-center border-stone-300 shadow-2xl">
+
+            <div id="confirm-icon"
+                class="w-12 h-12 rounded-full bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center mx-auto mb-4">
+
+                <svg class="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    viewBox="0 0 24 24">
+
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+
+                    <line x1="12" y1="9" x2="12" y2="13" />
+
+                    <line x1="12" y1="17" x2="12.01" y2="17" />
+
+                </svg>
+
+            </div>
+
+
+            <h3 id="confirm-title"
+                class="text-base font-bold text-stone-900 mb-1">
+                Restart Remote Computer?
+            </h3>
+
+
+            <p id="confirm-description"
+                class="text-xs text-stone-500 mb-6">
+                This will reboot the system session immediately. Any unsaved remote work may be lost.
+            </p>
+
+
+            <div class="flex items-center gap-3">
+
+                <button onclick="closeConfirmModal(false)"
+                    class="cream-btn w-1/2 py-2.5 rounded-xl text-xs font-semibold text-stone-600">
+                    Cancel
+                </button>
+
+                <button id="confirm-btn"
+                    onclick="closeConfirmModal(true)"
+                    class="cream-btn cream-btn-primary w-1/2 py-2.5 rounded-xl text-xs font-semibold">
+                    Confirm
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- APPLICATION SCRIPT -->
+    <script>
+
+        let currentScreenshotUrl = null;
+        let confirmCallback = null;
+
+
+        // API helper
+        async function api(url, options = {}) {
+
+            const response = await fetch(url, {
+                ...options,
+                cache: "no-store"
+            });
+
+            if (!response.ok) {
+
+                let message = "Request failed";
+
+                try {
+
+                    const data = await response.json();
+                    message = data.error || message;
+
+                } catch {
+
+                    message = await response.text();
+
+                }
+
+                throw new Error(message);
+            }
+
+            return response;
+        }
+
+
+        // Toast notifications
+        function showToast(message, type = "success") {
+
+            const container = document.querySelector("#toast-container");
+            const toast = document.createElement("div");
+
+            const isError = type === "error";
+
+            const bgClass = isError
+                ? "bg-rose-50 border-rose-200 text-rose-900"
+                : "bg-stone-900 border-stone-800 text-white";
+
+            const iconSvg = isError
+                ? `<svg class="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`
+                : `<svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`;
+
+            toast.className = `toast-item pointer-events-auto flex items-center gap-3 p-3.5 rounded-xl border ${bgClass} shadow-xl text-xs font-medium`;
+
+            toast.innerHTML = `
+                ${iconSvg}
+                <span class="flex-1">${message}</span>
+            `;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(10px)';
+                toast.style.transition = 'all 0.25s ease';
+
+                setTimeout(() => toast.remove(), 250);
+
+            }, 3500);
+        }
+
+
+        // Execute power action
+        async function action(actionName) {
+
+            try {
+
+                const response = await api("/api/action", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        action: actionName
+                    })
+                });
+
+                const data = await response.json();
+
+                showToast(data.message || "Action completed", "success");
+
+            } catch (error) {
+
+                showToast(error.message, "error");
+
+            }
+        }
+
+
+        // Confirm action modal
+        function confirmAction(actionName) {
+
+            const modal = document.querySelector("#confirm-modal");
+            const title = document.querySelector("#confirm-title");
+            const description = document.querySelector("#confirm-description");
+            const confirmBtn = document.querySelector("#confirm-btn");
+            const iconContainer = document.querySelector("#confirm-icon");
+
+
+            if (actionName === "stopServer") {
+
+                title.textContent = "Stop Remote Server?";
+
+                description.textContent =
+                    "This will terminate the server session. You will lose remote connectivity until restarted locally.";
+
+                confirmBtn.className =
+                    "cream-btn cream-btn-danger w-1/2 py-2.5 rounded-xl text-xs font-semibold";
+
+                confirmBtn.textContent = "Stop Server";
+
+                iconContainer.className =
+                    "w-12 h-12 rounded-full bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center mx-auto mb-4";
+
+                iconContainer.innerHTML = `
+                    <svg class="w-6 h-6"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.2"
+                        viewBox="0 0 24 24">
+
+                        <path d="M18.36 6.64a9 9 0 1 1-12.73 0" />
+
+                        <line x1="12" y1="2" x2="12" y2="12" />
+
+                    </svg>
+                `;
+
+            } else {
+
+                title.textContent = "Restart Remote Computer?";
+
+                description.textContent =
+                    "This will reboot the system session immediately. Any unsaved remote work may be lost.";
+
+                confirmBtn.className =
+                    "cream-btn cream-btn-primary w-1/2 py-2.5 rounded-xl text-xs font-semibold";
+
+                confirmBtn.textContent = "Confirm Reboot";
+
+                iconContainer.className =
+                    "w-12 h-12 rounded-full bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center mx-auto mb-4";
+
+                iconContainer.innerHTML = `
+                    <svg class="w-6 h-6"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        viewBox="0 0 24 24">
+
+                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+
+                        <line x1="12" y1="9" x2="12" y2="13" />
+
+                        <line x1="12" y1="17" x2="12.01" y2="17" />
+
+                    </svg>
+                `;
+            }
+
+
+            modal.classList.remove("hidden");
+            modal.classList.add("flex");
+
+
+            confirmCallback = (confirmed) => {
+
+                if (confirmed) {
+                    action(actionName);
+                }
+
+            };
+        }
+
+
+        function closeConfirmModal(confirmed) {
+
+            const modal = document.querySelector("#confirm-modal");
+
+            modal.classList.add("hidden");
+            modal.classList.remove("flex");
+
+            if (confirmCallback) {
+
+                confirmCallback(confirmed);
+                confirmCallback = null;
+
+            }
+        }
+
+
+        // Capture screenshot
+        async function takeShot() {
+
+            const button = document.querySelector("#capture-button");
+            const image = document.querySelector("#shot");
+            const placeholder = document.querySelector("#placeholder");
+            const hoverHint = document.querySelector("#shot-hover-hint");
+            const statusText = document.querySelector("#shot-status");
+
+
+            try {
+
+                button.disabled = true;
+
+                button.innerHTML = `
+                    <svg class="w-4 h-4 animate-spin text-white"
+                        fill="none"
+                        viewBox="0 0 24 24">
+
+                        <circle class="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            stroke-width="4">
+                        </circle>
+
+                        <path class="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                        </path>
+
+                    </svg>
+
+                    <span>Capturing...</span>
+                `;
+
+
+                const response = await api("/api/screenshot");
+
+                const blob = await response.blob();
+
+
+                if (currentScreenshotUrl) {
+                    URL.revokeObjectURL(currentScreenshotUrl);
+                }
+
+
+                currentScreenshotUrl = URL.createObjectURL(blob);
+
+                image.src = currentScreenshotUrl;
+
+                image.classList.remove("hidden");
+
+                placeholder.classList.add("hidden");
+
+                if (hoverHint) {
+                    hoverHint.classList.remove("hidden");
+                }
+
+                if (statusText) {
+                    statusText.textContent =
+                        `LAST CAPTURE: ${new Date().toLocaleTimeString()}`;
+                }
+
+
+                showToast("Screenshot captured successfully", "success");
+
+            } catch (error) {
+
+                showToast(error.message, "error");
+
+            } finally {
+
+                button.disabled = false;
+
+                button.innerHTML = `
+                    <svg class="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        viewBox="0 0 24 24">
+
+                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+
+                        <circle cx="12" cy="13" r="4" />
+
+                    </svg>
+
+                    <span>Capture Screenshot</span>
+                `;
+            }
+        }
+
+
+        // Lightbox Functions
+        function openLightbox() {
+
+            if (!currentScreenshotUrl) return;
+
+            const lightbox = document.querySelector("#lightbox");
+            const lightboxImg = document.querySelector("#lightbox-img");
+
+            lightboxImg.src = currentScreenshotUrl;
+
+            lightbox.classList.remove("hidden");
+            lightbox.classList.add("flex");
+        }
+
+
+        function closeLightbox() {
+
+            const lightbox = document.querySelector("#lightbox");
+
+            lightbox.classList.add("hidden");
+            lightbox.classList.remove("flex");
+        }
+
+
+        document.addEventListener("keydown", (e) => {
+
+            if (e.key === "Escape") {
+                closeLightbox();
+            }
+
+        });
+
+
+        // Update Wi-Fi and battery status
+        async function updateStatus() {
+
+            const wifi = document.querySelector("#wifi");
+            const wifiDot = document.querySelector("#wifi-dot");
+            const battery = document.querySelector("#battery");
+
+
+            try {
+
+                const response = await api("/api/status");
+
+                const data = await response.json();
+
+
+                if (data.internet) {
+
+                    wifi.textContent = "Online";
+
+                    wifiDot.style.background = "#059669";
+
+                    wifiDot.style.boxShadow =
+                        "0 0 8px rgba(5, 150, 105, 0.4)";
+
+                } else {
+
+                    wifi.textContent = "Offline";
+
+                    wifiDot.style.background = "#E11D48";
+
+                    wifiDot.style.boxShadow =
+                        "0 0 8px rgba(225, 29, 72, 0.4)";
+                }
+
+
+                battery.textContent =
+                    data.battery === null
+                        ? "🔋 N/A"
+                        : "🔋 " + data.battery + "%" +
+                        (data.charging ? " ⚡" : "");
+
+
+            } catch (error) {
+
+                wifi.textContent = "Unavailable";
+
+                wifiDot.style.background = "#E11D48";
+
+                wifiDot.style.boxShadow =
+                    "0 0 8px rgba(225, 29, 72, 0.4)";
+
+                battery.textContent = "🔋 --";
+            }
+        }
+
+
+        updateStatus();
+
+        setInterval(updateStatus, 10000);
+
+    </script>
+
+</body>
+
+</html>
