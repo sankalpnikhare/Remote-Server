@@ -1,1 +1,1 @@
-*.ejs linguist-language=JavaScript
+backend/views/*.ejs linguist-language=JavaScript
