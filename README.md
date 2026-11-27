@@ -1,21 +1,143 @@
-# Remote-Server
-A VibeCoded Remote server for Windows machine made with Express.
+# 🏨 StayEase — Hotel Reservation System
 
-Run this code in your local Env and you can partially control your windows pc and monitor whats going on your machine.
+**StayEase** is a full-stack hotel reservation platform built using **Node.js, Express.js, and MongoDB**. It allows users to explore and reserve hotels across different cities, while property owners can list their properties and manage reservations through a dedicated host dashboard.
 
-The only limit is that you can only control it when you machine and Phone are connected to same device.
+The platform provides secure authentication, email verification, cloud-based image storage, and booking request management to deliver a smooth experience for both guests and hosts.
 
-To control it remotely use Reverse Proxy for example Ngrok.
+## ✨ Features
 
-Forward the port to Ngrok agent with Command "ngrok http {port where the server is running}"
+### 👤 User Authentication & Security
+- **Google OAuth 2.0** — Sign in using Google authentication.
+- **JWT Authentication** — Secure token-based authentication.
+- **Email Verification** — Verify user email addresses during registration.
+- **Login Rate Limiting** — Protect login endpoints against brute-force attacks.
+- Secure password hashing and authentication.
 
-With the given link by Ngrok you can Control your pc remotely. 
+### 🏨 Hotel Reservations
+- Explore hotels listed across multiple cities.
+- View property details, pricing, and available information.
+- Submit hotel reservation requests.
+- Track booking request status.
 
-Or instead of that you can directly run both the express server and ngrok server by running the remote-server.vbs file provided.(stop-remote-server.vbs to stop both the servers).
+### 🏠 Property Management
+- List your own properties on the platform.
+- Upload multiple property images.
+- Cloud-based image storage and CDN delivery.
+- Manage listed properties through a dedicated host dashboard.
 
+### 📊 Host Dashboard
+- View all listed properties.
+- Track booked properties.
+- View incoming reservation requests.
+- **Confirm or Reject** reservation requests.
+- Manage property-related booking activity from one place.
 
-To automate the whole Process I have provided the check_internet.vbs file to automate all the process .
-If PC is connected to internet -> Run remote-server.vbs 
-If not -> Wait 3 minutes , Try again 
+## 🛠️ Tech Stack
 
-If connected , then disconnected -> Try Again
+| Technology | Purpose |
+|---|---|
+| Node.js | Backend JavaScript runtime |
+| Express.js | Server-side framework and REST API handling |
+| MongoDB | Database |
+| Mongoose | MongoDB object modeling |
+| HTML5 | Frontend structure |
+| CSS3 | Frontend styling |
+| JavaScript | Client-side functionality |
+| JWT | Token-based authentication |
+| Google OAuth 2.0 | Google authentication |
+| Cloudinary | Cloud image storage and CDN delivery |
+| bcrypt | Password hashing |
+| Nodemailer | Email verification and notifications |
+
+## ⚙️ Getting Started
+
+Follow these steps to run StayEase locally.
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/YOUR_USERNAME/stayease.git
+cd stayease
+```
+
+### 2. Install Dependencies
+
+```bash
+npm install
+```
+
+### 3. Configure Environment Variables
+
+Create a `.env` file in the root directory.
+
+```env
+PORT=5000
+
+MONGO_URI=your_mongodb_connection_string
+
+JWT_SECRET=your_jwt_secret
+
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+
+EMAIL_USER=your_email
+EMAIL_PASS=your_email_app_password
+
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+```
+
+Configure the environment variables according to your project configuration.
+
+### 4. Start the Server
+
+```bash
+npm start
+```
+
+For development:
+
+```bash
+npm run dev
+```
+
+Open your browser and navigate to:
+
+```text
+http://localhost:5000
+```
+
+## 📂 Project Highlights
+
+StayEase focuses on implementing practical backend engineering concepts, including:
+
+- Authentication and authorization.
+- OAuth 2.0 integration.
+- JWT-based authentication.
+- Login rate limiting and security.
+- MongoDB data modeling and relationships.
+- Email verification workflows.
+- Cloud-based media management.
+- Role-based property and reservation management.
+- Booking request lifecycle management.
+
+## 🚀 Future Improvements
+
+- Real-time booking notifications.
+- Online payment integration.
+- Advanced hotel search and filtering.
+- Hotel availability management.
+- Redis-based caching and rate limiting.
+- Scalable deployment with load balancing.
+
+## 👨‍💻 Author
+
+**Sankalp Nikhare**
+
+- GitHub: [@sankalpnikhare](https://github.com/sankalpnikhare)
+- LinkedIn: [Sankalp Nikhare](https://www.linkedin.com/in/sankalp-nikhare-404a08259/)
+
+---
+
+⭐ If you find this project interesting, consider giving it a star!
